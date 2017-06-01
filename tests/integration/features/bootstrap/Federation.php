@@ -23,6 +23,7 @@ require __DIR__ . '/../../../../lib/composer/autoload.php';
 
 trait Federation {
 
+
 	/**
 	 * @Given /^user "([^"]*)" from server "(LOCAL|REMOTE)" shares "([^"]*)" with user "([^"]*)" from server "(LOCAL|REMOTE)"$/
 	 *
@@ -64,7 +65,7 @@ trait Federation {
 		);
 		$this->theHTTPStatusCodeShouldBe('200');
 		$this->theOCSStatusCodeShouldBe('100');
-		$share_id = $this->response->xml()->data[0]->element[0]->id;
+		$share_id = $this->getResponseXml()->data[0]->element[0]->id;
 		$this->sendingToWith(
 			'POST',
 			"/apps/files_sharing/api/v1/remote_shares/pending/{$share_id}",
