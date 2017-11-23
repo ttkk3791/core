@@ -39,46 +39,40 @@ use OCP\UserInterface;
  */
 class SyncService {
 
-	/** @var UserInterface */
-	private $backend;
-	/** @var AccountMapper */
-	private $mapper;
 	/** @var IConfig */
 	private $config;
 	/** @var ILogger */
 	private $logger;
-	/** @var string */
-	private $backendClass;
+	/** @var AccountMapper */
+	private $mapper;
 
 	/**
 	 * SyncService constructor.
 	 *
-	 * @param AccountMapper $mapper
-	 * @param UserInterface $backend
 	 * @param IConfig $config
 	 * @param ILogger $logger
+	 * @param AccountMapper $mapper
 	 */
-	public function __construct(AccountMapper $mapper,
-								UserInterface $backend,
-								IConfig $config,
-								ILogger $logger) {
-		$this->mapper = $mapper;
-		$this->backend = $backend;
-		$this->backendClass = get_class($backend);
+	public function __construct(IConfig $config,
+								ILogger $logger,
+								AccountMapper $mapper) {
 		$this->config = $config;
 		$this->logger = $logger;
+		$this->mapper = $mapper;
 	}
 
 	/**
+	 * @param UserInterface $backend the backend to check
 	 * @param \Closure $callback is called for every user to allow progress display
 	 * @return array
 	 */
-	public function getNoLongerExistingUsers(\Closure $callback) {
+	public function getNoLongerExistingUsers(UserInterface $backend, \Closure $callback) {
 		// detect no longer existing users
 		$toBeDeleted = [];
-		$this->mapper->callForAllUsers(function (Account $a) use (&$toBeDeleted, $callback) {
-			if ($a->getBackend() == $this->backendClass) {
-				if (!$this->backend->userExists($a->getUserId())) {
+		$backendClass = get_class($backend);
+		$this->mapper->callForAllUsers(function (Account $a) use (&$toBeDeleted, $backend, $backendClass, $callback) {
+			if ($a->getBackend() === $backendClass) {
+				if (!$backend->userExists($a->getUserId())) {
 					$toBeDeleted[] = $a->getUserId();
 				}
 			}
@@ -89,30 +83,32 @@ class SyncService {
 	}
 
 	/**
+	 * @param UserInterface $backend to sync
 	 * @param \Closure $callback is called for every user to progress display
 	 */
-	public function run(\Closure $callback) {
+	public function run(UserInterface $backend, \Closure $callback) {
 		$limit = 500;
 		$offset = 0;
+		$backendClass = get_class($backend);
 		do {
-			$users = $this->backend->getUsers('', $limit, $offset);
+			$users = $backend->getUsers('', $limit, $offset);
 
 			// update existing and insert new users
 			foreach ($users as $uid) {
 				try {
 					$a = $this->mapper->getByUid($uid);
-					if ($a->getBackend() !== $this->backendClass) {
+					if ($a->getBackend() !== $backendClass) {
 						$this->logger->warning(
-							"User <$uid> already provided by another backend({$a->getBackend()} != {$this->backendClass}), skipping.",
+							"User <$uid> already provided by another backend({$a->getBackend()} != $backendClass), skipping.",
 							['app' => self::class]
 						);
 						continue;
 					}
-					$a = $this->setupAccount($a, $uid);
+					$a = $this->setupAccount($a, $backend, $uid);
 					$this->mapper->update($a);
 				} catch(DoesNotExistException $ex) {
-					$a = $this->createNewAccount($uid);
-					$this->setupAccount($a, $uid);
+					$a = $this->createNewAccount($backend, $uid);
+					$this->setupAccount($a, $backend, $uid);
 					$this->mapper->insert($a);
 				}
 				// clean the user's preferences
@@ -127,10 +123,11 @@ class SyncService {
 
 	/**
 	 * @param Account $a
+	 * @param UserInterface $backend of the user
 	 * @param string $uid
 	 * @return Account
 	 */
-	public function setupAccount(Account $a, $uid) {
+	public function setupAccount(Account $a, UserInterface $backend, $uid) {
 		list($hasKey, $value) = $this->readUserConfig($uid, 'core', 'enabled');
 		if ($hasKey) {
 			$a->setState(($value === 'true') ? Account::STATE_ENABLED : Account::STATE_DISABLED);
@@ -139,16 +136,16 @@ class SyncService {
 		if ($hasKey) {
 			$a->setLastLogin($value);
 		}
-		if ($this->backend instanceof IProvidesEMailBackend) {
-			$a->setEmail($this->backend->getEMailAddress($uid));
+		if ($backend instanceof IProvidesEMailBackend) {
+			$a->setEmail($backend->getEMailAddress($uid));
 		} else {
 			list($hasKey, $value) = $this->readUserConfig($uid, 'settings', 'email');
 			if ($hasKey) {
 				$a->setEmail($value);
 			}
 		}
-		if ($this->backend instanceof IProvidesQuotaBackend) {
-			$quota = $this->backend->getQuota($uid);
+		if ($backend instanceof IProvidesQuotaBackend) {
+			$quota = $backend->getQuota($uid);
 			if ($quota !== null) {
 				$a->setQuota($quota);
 			}
@@ -158,32 +155,37 @@ class SyncService {
 				$a->setQuota($value);
 			}
 		}
-		if ($this->backend->implementsActions(\OC_User_Backend::GET_HOME)) {
-			$home = $this->backend->getHome($uid);
+		if ($backend->implementsActions(\OC_User_Backend::GET_HOME)) {
+			$home = $backend->getHome($uid);
 			if (!is_string($home) || substr($home, 0, 1) !== '/') {
 				$home = $this->config->getSystemValue('datadirectory', \OC::$SERVERROOT . '/data') . "/$uid";
 				$this->logger->warning(
-					"User backend {$this->backendClass} provided no home for <$uid>, using <$home>.",
+					"User backend ".get_class($backend)." provided no home for <$uid>, using <$home>.",
 					['app' => self::class]
 				);
 			}
 			$a->setHome($home);
 		}
-		if ($this->backend->implementsActions(\OC_User_Backend::GET_DISPLAYNAME)) {
-			$a->setDisplayName($this->backend->getDisplayName($uid));
+		if ($backend->implementsActions(\OC_User_Backend::GET_DISPLAYNAME)) {
+			$a->setDisplayName($backend->getDisplayName($uid));
 		}
 		// Check if backend supplies an additional search string
-		if ($this->backend instanceof IProvidesExtendedSearchBackend) {
-			$a->setSearchTerms($this->backend->getSearchTerms($uid));
+		if ($backend instanceof IProvidesExtendedSearchBackend) {
+			$a->setSearchTerms($backend->getSearchTerms($uid));
 		}
 		return $a;
 	}
 
-	private function createNewAccount($uid) {
+	/**
+	 * @param UserInterface $backend of the user
+	 * @param string $uid of the user
+	 * @return Account
+	 */
+	public function createNewAccount($backend, $uid) {
 		$a = new Account();
 		$a->setUserId($uid);
 		$a->setState(Account::STATE_ENABLED);
-		$a->setBackend(get_class($this->backend));
+		$a->setBackend(get_class($backend));
 		return $a;
 	}
 

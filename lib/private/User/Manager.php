@@ -78,16 +78,20 @@ class Manager extends PublicEmitter implements IUserManager {
 	/** @var AccountMapper */
 	private $accountMapper;
 
+	/** @var SyncService */
+	private $syncService;
+
 	/**
 	 * @param IConfig $config
 	 * @param ILogger $logger
 	 * @param AccountMapper $accountMapper
 	 */
-	public function __construct(IConfig $config, ILogger $logger, AccountMapper $accountMapper) {
+	public function __construct(IConfig $config, ILogger $logger, AccountMapper $accountMapper, SyncService $syncService) {
 		$this->config = $config;
 		$this->logger = $logger;
 		$this->accountMapper = $accountMapper;
 		$this->cachedUsers = new CappedMemoryCache();
+		$this->syncService = $syncService;
 		$cachedUsers = &$this->cachedUsers;
 		$this->listen('\OC\User', 'postDelete', function ($user) use (&$cachedUsers) {
 			/** @var \OC\User\User $user */
@@ -222,11 +226,13 @@ class Manager extends PublicEmitter implements IUserManager {
 				if ($uid !== false) {
 					try {
 						$account = $this->accountMapper->getByUid($uid);
+						$this->syncService->setupAccount($account, $backend, $account->getUserId());
+						$this->accountMapper->update($account);
 					} catch(DoesNotExistException $ex) {
-						$account = $this->newAccount($uid, $backend);
+						$account = $this->syncService->createNewAccount($backend, $uid);
+						$this->syncService->setupAccount($account, $backend, $account->getUserId());
+						$this->accountMapper->insert($account);
 					}
-					$this->cachedUsers->remove($account->getUserId());
-					// TODO always sync account with backend here to update displayname, email, search terms, home etc. user_ldap currently updates user metadata on login, core should take care of updating accounts on a successful login
 					return $this->getUserObject($account);
 				}
 			}
@@ -430,55 +436,6 @@ class Manager extends PublicEmitter implements IUserManager {
 		return array_map(function(Account $account) {
 			return $this->getUserObject($account);
 		}, $accounts);
-	}
-
-	/**
-	 * TODO inject OC\User\SyncService to deduplicate Account creation code
-	 * @param string $uid
-	 * @param UserInterface $backend
-	 * @return Account|\OCP\AppFramework\Db\Entity
-	 */
-	private function newAccount($uid, $backend) {
-		$account = new Account();
-		$account->setUserId($uid);
-		$account->setBackend(get_class($backend));
-		$account->setState(Account::STATE_ENABLED);
-		$account->setLastLogin(0);
-		if ($backend->implementsActions(Backend::GET_DISPLAYNAME)) {
-			$account->setDisplayName($backend->getDisplayName($uid));
-		}
-		if ($backend instanceof IProvidesEMailBackend) {
-			$email = $backend->getEMailAddress($uid);
-			if ($email !== null) {
-				$account->setEmail($email);
-			}
-		}
-		if ($backend instanceof IProvidesQuotaBackend) {
-			$quota = $backend->getQuota($uid);
-			if ($quota !== null) {
-				$account->setQuota($quota);
-			}
-		}
-		if ($backend instanceof IProvidesExtendedSearchBackend) {
-			$terms = $backend->getSearchTerms($uid);
-			if (!empty($terms)) {
-				$account->setSearchTerms($terms);
-			}
-		}
-		$home = false;
-		if ($backend->implementsActions(Backend::GET_HOME)) {
-			$home = $backend->getHome($uid);
-		}
-		if (!is_string($home) || substr($home, 0, 1) !== '/') {
-			$home = $this->config->getSystemValue('datadirectory', \OC::$SERVERROOT . '/data') . "/$uid";
-			$this->logger->warning(
-				"User backend ".get_class($backend)." provided no home for <$uid>, using <$home>.",
-				['app' => self::class]
-			);
-		}
-		$account->setHome($home);
-		$account = $this->accountMapper->insert($account);
-		return $account;
 	}
 
 	public function getBackend($backendClass) {
