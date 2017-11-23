@@ -1,13 +1,27 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: deepdiver
- * Date: 12.04.17
- * Time: 14:56
+ * @author Thomas Müller <thomas.mueller@tmit.eu>
+ * @author Tom Needham <tom@owncloud.com>
+
+ *
+ * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @license AGPL-3.0
+ *
+ * This code is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License, version 3,
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License, version 3,
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  */
 
 namespace Test\User;
-
 
 use OC\User\Account;
 use OC\User\AccountMapper;
@@ -35,9 +49,9 @@ class SyncServiceTest extends TestCase {
 			['user1', 'settings', 'email', '', 'foo@bar.net'],
 		]);
 
-		$s = new SyncService($mapper, $backend, $config, $logger);
+		$s = new SyncService($config, $logger, $mapper);
 		$a = new Account();
-		$s->setupAccount($a, 'user1');
+		$s->setupAccount($a, $backend, 'user1');
 
 		$this->assertEquals('foo@bar.net', $a->getEmail());
 	}
