@@ -291,7 +291,7 @@ class Manager extends PublicEmitter implements IUserManager {
 	 * @param string $uid
 	 * @param string $password
 	 * @throws \Exception
-	 * @return bool|\OC\User\User the created user or false
+	 * @return bool|IUser the created user or false
 	 */
 	public function createUser($uid, $password) {
 		return $this->emittingCall(function () use (&$uid, &$password) {
@@ -340,16 +340,11 @@ class Manager extends PublicEmitter implements IUserManager {
 			foreach ($this->backends as $backend) {
 				if ($backend->implementsActions(Backend::CREATE_USER)) {
 					$backend->createUser($uid, $password);
-					// Create a new account entity
-					$account = $this->syncService->createNewAccount(get_class($backend), $uid);
-					// Sync the meta data
-					$this->syncService->syncAccount($account, $backend, $uid);
-					$this->accountMapper->insert($account);
-					$user = $this->getUserObject($account);
-					$this->emit('\OC\User', 'postCreateUser', [$user, $password]);
-					return $user;
+					$user = $this->createUserFromBackend($uid, $password, $backend);
+					return $user === null ? false : $user;
 				}
 			}
+
 
 			return false;
 		}, ['before' => ['uid' => $uid], 'after' => ['uid' => $uid, 'password' => $password]], 'user', 'create');
@@ -364,14 +359,15 @@ class Manager extends PublicEmitter implements IUserManager {
 	public function createUserFromBackend($uid, $password, $backend) {
 		return $this->emittingCall(function () use (&$uid, &$password, &$backend) {
 			$this->emit('\OC\User', 'preCreateUser', [$uid, '']);
-			$account = $this->syncService->createNewAccount($backend, $uid);
-			$this->syncService->syncAccount($account, $backend, $uid);
-			$this->accountMapper->insert($account);
-			$user = $this->getUserObject($account);
-			$this->emit('\OC\User', 'postCreateUser', [$user, $password]);
-			return $user;
+		try {
+			$account = $this->syncService->createOrSyncAccount($uid, get_class($backend));
+		} catch (\InvalidArgumentException $e) {
+			return null; // because thats what this method shoudl do apparently
+		}
+		$user = $this->getUserObject($account);
+		$this->emit('\OC\User', 'postCreateUser', [$user, $password]);
+		return $user;
 		}, ['before' => ['uid' => $uid]], 'user', 'create');
-
 	}
 
 	/**
