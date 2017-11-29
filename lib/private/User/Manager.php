@@ -386,6 +386,7 @@ class Manager extends PublicEmitter implements IUserManager {
 		$this->emit('\OC\User', 'preCreateUser', [$uid, '']);
 		$account = $this->syncService->createNewAccount($backend, $uid);
 		$this->syncService->syncAccount($account, $backend, $uid);
+		$this->accountMapper->insert($account);
 		$user = $this->getUserObject($account);
 		$this->emit('\OC\User', 'postCreateUser', [$user, $password]);
 		return $user;

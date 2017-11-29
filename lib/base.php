@@ -739,6 +739,7 @@ class OC {
 				$account = self::$server->getAccountMapper()->getByUid($user->getUID());
 				$userBackend = $account->getBackendInstance();// Get the backend for a user
 				$syncService->syncAccount($account, $userBackend, $user->getUID());
+				self::$server->getAccountMapper()->update($account);
 			});
 		}
 	}
