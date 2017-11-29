@@ -46,6 +46,7 @@ use OC_Util;
 use OCA\DAV\Connector\Sabre\Auth;
 use OCP\App\IServiceLoader;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\Authentication\IApacheBackend;
 use OCP\Authentication\IAuthModule;
 use OCP\Events\EventEmitterTrait;
 use OCP\Files\NotPermittedException;
@@ -559,17 +560,33 @@ class Session implements IUserSession, Emitter {
 	 *
 	 * @param \OCP\Authentication\IApacheBackend $backend
 	 * @return bool
+	 * @throws LoginException
 	 */
-	public function loginWithApache(\OCP\Authentication\IApacheBackend $backend) {
+	public function loginWithApache(IApacheBackend $backend) {
 
 		$uid = $backend->getCurrentUserId();
-		if ($uid === $this->getUser()->getUID()) {
+
+		if ($this->getUser() != null && $uid === $this->getUser()->getUID()) {
 			return true; // nothing to do
 		}
 		$this->session->regenerateId();
 		//$run = true;
 		//OC_Hook::emit("OC_User", "pre_login", ["run" => &$run, "uid" => $uid]);
 		$this->manager->emit('\OC\User', 'preLogin', [$uid, '']);
+
+		// Die here if not valid
+		if(!$backend->isSessionActive()) {
+			return false;
+		}
+
+		// Now we try to create the account or sync
+		/** @var SyncService $syncService */
+		$syncService = \OC::$server->query('SyncService');
+		try {
+			$syncService->createOrSyncAccount($uid, $backend);
+		} catch (\InvalidArgumentException $e) {
+			throw new LoginException('Uid collision2');
+		}
 
 		$user = $this->manager->get($uid);
 		if ($user === false) {

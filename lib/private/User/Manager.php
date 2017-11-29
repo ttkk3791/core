@@ -225,15 +225,7 @@ class Manager extends PublicEmitter implements IUserManager {
 			if ($backend->implementsActions(Backend::CHECK_PASSWORD)) {
 				$uid = $backend->checkPassword($loginName, $password);
 				if ($uid !== false) {
-					try {
-						$account = $this->accountMapper->getByUid($uid);
-						$this->syncService->syncAccount($account, $backend, $account->getUserId());
-						$this->accountMapper->update($account);
-					} catch(DoesNotExistException $ex) {
-						$account = $this->syncService->createNewAccount($backend, $uid);
-						$this->syncService->syncAccount($account, $backend, $account->getUserId());
-						$this->accountMapper->insert($account);
-					}
+					$account = $this->syncService->createOrSyncAccount($uid, $backend);
 					return $this->getUserObject($account);
 				}
 			}
@@ -345,14 +337,11 @@ class Manager extends PublicEmitter implements IUserManager {
 				$this->registerBackend(new Database());
 			}
 
-			if (empty($this->backends)) {
-				$this->registerBackend(new Database());
-			}
 			foreach ($this->backends as $backend) {
 				if ($backend->implementsActions(Backend::CREATE_USER)) {
 					$backend->createUser($uid, $password);
 					// Create a new account entity
-					$account = $this->syncService->createNewAccount($backend, $uid);
+					$account = $this->syncService->createNewAccount(get_class($backend), $uid);
 					// Sync the meta data
 					$this->syncService->syncAccount($account, $backend, $uid);
 					$this->accountMapper->insert($account);
@@ -373,24 +362,16 @@ class Manager extends PublicEmitter implements IUserManager {
 	 * @return IUser | null
 	 */
 	public function createUserFromBackend($uid, $password, $backend) {
-<<<<<<< HEAD
 		return $this->emittingCall(function () use (&$uid, &$password, &$backend) {
 			$this->emit('\OC\User', 'preCreateUser', [$uid, '']);
 			$account = $this->syncService->createNewAccount($backend, $uid);
-			$this->syncService->setupAccount($account, $backend, $uid);
+			$this->syncService->syncAccount($account, $backend, $uid);
+			$this->accountMapper->insert($account);
 			$user = $this->getUserObject($account);
 			$this->emit('\OC\User', 'postCreateUser', [$user, $password]);
 			return $user;
 		}, ['before' => ['uid' => $uid]], 'user', 'create');
-=======
-		$this->emit('\OC\User', 'preCreateUser', [$uid, '']);
-		$account = $this->syncService->createNewAccount($backend, $uid);
-		$this->syncService->syncAccount($account, $backend, $uid);
-		$this->accountMapper->insert($account);
-		$user = $this->getUserObject($account);
-		$this->emit('\OC\User', 'postCreateUser', [$user, $password]);
-		return $user;
->>>>>>> 8444b7f769... Call syncAccount after user login
+
 	}
 
 	/**
