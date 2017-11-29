@@ -68,6 +68,7 @@ class UserMountCacheTest extends TestCase {
 
 		/** @var Log $log */
 		$log = $this->createMock(Log::class);
+		/** @var SyncService $syncService */
 		$syncService = $this->createMock(SyncService::class);
 		$this->userManager = new Manager($config, $log, $accountMapper, $syncService);
 		$this->cache = new UserMountCache($this->connection, $this->userManager, $log);
