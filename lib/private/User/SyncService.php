@@ -155,17 +155,20 @@ class SyncService {
 				$a->setQuota($value);
 			}
 		}
+		$home = false;
 		if ($backend->implementsActions(\OC_User_Backend::GET_HOME)) {
 			$home = $backend->getHome($uid);
-			if (!is_string($home) || substr($home, 0, 1) !== '/') {
-				$home = $this->config->getSystemValue('datadirectory', \OC::$SERVERROOT . '/data') . "/$uid";
-				$this->logger->warning(
-					"User backend ".get_class($backend)." provided no home for <$uid>, using <$home>.",
-					['app' => self::class]
-				);
-			}
-			$a->setHome($home);
 		}
+		if (!is_string($home) || substr($home, 0, 1) !== '/') {
+			$home = $this->config->getSystemValue('datadirectory', \OC::$SERVERROOT . '/data') . "/$uid";
+			$this->logger->warning(
+				"User backend ".get_class($backend)." provided no home for <$uid>, using <$home>.",
+				['app' => self::class]
+			);
+		}
+		// This will set the home if not provided by the backend
+		$a->setHome($home);
+
 		if ($backend->implementsActions(\OC_User_Backend::GET_DISPLAYNAME)) {
 			//TODO IConsumesDisplayNameBackend for setDisplayName?
 			$a->setDisplayName($backend->getDisplayName($uid));
