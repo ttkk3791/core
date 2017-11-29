@@ -178,7 +178,8 @@ class OC_User {
 	 * @return bool
 	 */
 	public static function loginWithApache(\OCP\Authentication\IApacheBackend $backend) {
-
+		return self::getUserSession()->loginWithApache($backend);
+		/*
 		$uid = $backend->getCurrentUserId();
 		$run = true;
 		OC_Hook::emit("OC_User", "pre_login", ["run" => &$run, "uid" => $uid]);
@@ -211,6 +212,7 @@ class OC_User {
 			return true;
 		}
 		return false;
+		*/
 	}
 
 	/**
