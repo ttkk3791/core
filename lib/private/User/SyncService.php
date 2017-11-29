@@ -104,11 +104,11 @@ class SyncService {
 						);
 						continue;
 					}
-					$a = $this->setupAccount($a, $backend, $uid);
+					$a = $this->syncAccount($a, $backend, $uid);
 					$this->mapper->update($a);
 				} catch(DoesNotExistException $ex) {
 					$a = $this->createNewAccount($backend, $uid);
-					$this->setupAccount($a, $backend, $uid);
+					$this->syncAccount($a, $backend, $uid);
 					$this->mapper->insert($a);
 				}
 				// clean the user's preferences
@@ -127,7 +127,7 @@ class SyncService {
 	 * @param string $uid
 	 * @return Account
 	 */
-	public function setupAccount(Account $a, UserInterface $backend, $uid) {
+	public function syncAccount(Account $a, UserInterface $backend, $uid) {
 		list($hasKey, $value) = $this->readUserConfig($uid, 'core', 'enabled');
 		if ($hasKey) {
 			$a->setState(($value === 'true') ? Account::STATE_ENABLED : Account::STATE_DISABLED);

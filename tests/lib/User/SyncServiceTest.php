@@ -51,7 +51,7 @@ class SyncServiceTest extends TestCase {
 
 		$s = new SyncService($config, $logger, $mapper);
 		$a = new Account();
-		$s->setupAccount($a, $backend, 'user1');
+		$s->syncAccount($a, $backend, 'user1');
 
 		$this->assertEquals('foo@bar.net', $a->getEmail());
 	}
