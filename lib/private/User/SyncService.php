@@ -192,7 +192,7 @@ class SyncService {
 	 * @return Account
 	 * @throws \InvalidArgumentException
 	 */
-	public function createOrSyncAccount($uid, $backend) {
+	public function createOrSyncAccount($uid, UserInterface $backend) {
 		// Try to find the account based on the uid
 		try {
 			$account = $this->mapper->getByUid($uid);

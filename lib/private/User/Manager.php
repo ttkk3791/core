@@ -351,7 +351,6 @@ class Manager extends PublicEmitter implements IUserManager {
 	}
 
 	/**
-	 * TODO isnt this the same as a few lines above?? Why do we need two methods for this. Whats the different with the preCreateUser hook data, this one doesnt send the password
 	 * @param string $uid
 	 * @param UserInterface $backend
 	 * @return IUser | null
@@ -360,7 +359,7 @@ class Manager extends PublicEmitter implements IUserManager {
 		return $this->emittingCall(function () use (&$uid, &$password, &$backend) {
 			$this->emit('\OC\User', 'preCreateUser', [$uid, '']);
 		try {
-			$account = $this->syncService->createOrSyncAccount($uid, get_class($backend));
+			$account = $this->syncService->createOrSyncAccount($uid, $backend);
 		} catch (\InvalidArgumentException $e) {
 			return null; // because thats what this method shoudl do apparently
 		}
