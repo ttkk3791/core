@@ -354,18 +354,19 @@ class Manager extends PublicEmitter implements IUserManager {
 	 * @param string $uid
 	 * @param UserInterface $backend
 	 * @return IUser | null
+	 * @deprecated core is responsible for creating accounts, see user_ldap how it is done
 	 */
 	public function createUserFromBackend($uid, $password, $backend) {
 		return $this->emittingCall(function () use (&$uid, &$password, &$backend) {
-			$this->emit('\OC\User', 'preCreateUser', [$uid, '']);
-		try {
-			$account = $this->syncService->createOrSyncAccount($uid, $backend);
-		} catch (\InvalidArgumentException $e) {
-			return null; // because thats what this method shoudl do apparently
-		}
-		$user = $this->getUserObject($account);
-		$this->emit('\OC\User', 'postCreateUser', [$user, $password]);
-		return $user;
+			$this->emit('\OC\User', 'preCreateUser', [$uid, $password]);
+			try {
+				$account = $this->syncService->createOrSyncAccount($uid, $backend);
+			} catch (\InvalidArgumentException $e) {
+				return null; // because thats what this method shoudl do apparently
+			}
+			$user = $this->getUserObject($account);
+			$this->emit('\OC\User', 'postCreateUser', [$user, $password]);
+			return $user;
 		}, ['before' => ['uid' => $uid]], 'user', 'create');
 	}
 

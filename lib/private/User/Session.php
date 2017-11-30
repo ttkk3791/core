@@ -54,9 +54,11 @@ use OCP\IConfig;
 use OCP\IRequest;
 use OCP\ISession;
 use OCP\IUser;
+use OCP\IUserBackend;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\Session\Exceptions\SessionNotAvailableException;
+use OCP\UserInterface;
 use OCP\Util;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
@@ -562,9 +564,26 @@ class Session implements IUserSession, Emitter {
 	 * @return bool
 	 * @throws LoginException
 	 */
-	public function loginWithApache(IApacheBackend $backend) {
+	public function loginWithApache(IApacheBackend $apacheBackend) {
 
-		$uid = $backend->getCurrentUserId();
+		$uidAndBackend = $apacheBackend->getCurrentUserId();
+		if (is_array($uidAndBackend)
+			&& count($uidAndBackend) === 2
+			&& $uidAndBackend[0] !== ''
+			&& $uidAndBackend[0] !== null
+			&& $uidAndBackend[1] instanceof UserInterface
+		) {
+			list($uid, $backend) = $uidAndBackend;
+		} else if (is_string($uidAndBackend)) {
+			$uid = $uidAndBackend;
+			if ($apacheBackend instanceof UserInterface) {
+				$backend = $apacheBackend;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
 
 		if ($this->getUser() != null && $uid === $this->getUser()->getUID()) {
 			return true; // nothing to do
@@ -575,18 +594,15 @@ class Session implements IUserSession, Emitter {
 		$this->manager->emit('\OC\User', 'preLogin', [$uid, '']);
 
 		// Die here if not valid
-		if(!$backend->isSessionActive()) {
+		if(!$apacheBackend->isSessionActive()) {
 			return false;
 		}
 
 		// Now we try to create the account or sync
+		// TODO inject
 		/** @var SyncService $syncService */
 		$syncService = \OC::$server->query('SyncService');
-		try {
-			$syncService->createOrSyncAccount($uid, $backend);
-		} catch (\InvalidArgumentException $e) {
-			throw new LoginException('Uid collision2');
-		}
+		$syncService->createOrSyncAccount($uid, $backend);
 
 		$user = $this->manager->get($uid);
 		if ($user === false) {

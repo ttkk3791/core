@@ -104,13 +104,14 @@ class SyncService {
 						);
 						continue;
 					}
-					$a = $this->syncAccount($a, $backend, $uid);
+					$this->syncAccount($a, $backend);
 					$this->mapper->update($a);
 				} catch(DoesNotExistException $ex) {
-					$a = $this->createNewAccount($backendClass, $uid);
-					$this->syncAccount($a, $backend, $uid);
+					$this->createNewAccount($backendClass, $uid);
+					$this->syncAccount($a, $backend);
 					$this->mapper->insert($a);
 				}
+				$uid = $a->getUserId(); // get correct case
 				// clean the user's preferences
 				$this->cleanPreferences($uid);
 
@@ -124,10 +125,10 @@ class SyncService {
 	/**
 	 * @param Account $a
 	 * @param UserInterface $backend of the user
-	 * @param string $uid
 	 * @return Account
 	 */
-	public function syncAccount(Account $a, UserInterface $backend, $uid) {
+	public function syncAccount(Account $a, UserInterface $backend) {
+		$uid = $a->getUserId();
 		list($hasKey, $value) = $this->readUserConfig($uid, 'core', 'enabled');
 		if ($hasKey) {
 			$a->setState(($value === 'true') ? Account::STATE_ENABLED : Account::STATE_DISABLED);
@@ -190,7 +191,6 @@ class SyncService {
 	 * @param $uid
 	 * @param UserInterface $backend
 	 * @return Account
-	 * @throws \InvalidArgumentException
 	 */
 	public function createOrSyncAccount($uid, UserInterface $backend) {
 		// Try to find the account based on the uid
@@ -201,15 +201,8 @@ class SyncService {
 			$account = $this->createNewAccount(get_class($backend), $uid);
 		}
 
-		// Check the backend is the same
-		if($account->getBackend() != get_class($backend)) {
-			// Then we have a uid collision
-			$this->logger->info("Uid collision when uid: $uid attempted to login");
-			throw new \InvalidArgumentException('Uid collision1');
-		}
-
 		// The account exists, sync
-		$account = $this->syncAccount($account, $backend, $uid);
+		$account = $this->syncAccount($account, $backend);
 		if($account->getId() === null) {
 			// New account, insert
 			$this->mapper->insert($account);
