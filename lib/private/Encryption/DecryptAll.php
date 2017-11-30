@@ -34,6 +34,7 @@ use OCP\IUserManager;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use OCA\Files_Sharing\ISharedStorage;
 
 class DecryptAll {
 
@@ -225,8 +226,8 @@ class DecryptAll {
 		while ($root = array_pop($directories)) {
 			$content = $this->rootView->getDirectoryContent($root);
 			foreach ($content as $file) {
-				// only decrypt files owned by the user
-				if($file->getStorage()->instanceOfStorage('OCA\Files_Sharing\SharedStorage')) {
+				// only decrypt files owned by the user, exclude incoming local shares, and incoming federated shares
+				if ($file->getStorage()->instanceOfStorage(ISharedStorage::class)) {
 						continue;
 				}
 				$path = $root . '/' . $file['name'];
