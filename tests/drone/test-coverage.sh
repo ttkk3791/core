@@ -44,8 +44,31 @@ fi
 ./occ app:enable federation
 ./occ app:enable federatedfilesharing
 
+
 if [[ -z ${FILES_EXTERNAL_TYPE} ]]; then
   exec phpdbg -d memory_limit=4096M -rr ./lib/composer/bin/phpunit --configuration tests/phpunit-autotest.xml ${GROUP} --coverage-clover tests/autotest-clover-${DB_TYPE}.xml
 else
+  ./occ app:enable files_external
+  case "${FILES_EXTERNAL_TYPE}" in
+    webdav)
+      wait-for-it owncloud_external:80
+       cat > config/config.webdav.php <<DELIM
+ <?php
+ return array(
+     'run'=>true,
+     'host'=>'owncloud_external:80/owncloud/remote.php/webdav/',
+     'user'=>'admin',
+     'password'=>'admin',
+     'root'=>'',
+     'wait'=> 0
+ );
+DELIM
+      ;;
+    *)
+      echo "Unsupported files external type!"
+      exit 1
+      ;;
+  esac
+
   exec phpdbg -d memory_limit=4096M -rr ./lib/composer/bin/phpunit --configuration tests/phpunit-autotest-external.xml ${GROUP} --coverage-clover tests/autotest-external-clover-${DB_TYPE}.xml
 fi
