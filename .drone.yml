@@ -102,7 +102,7 @@ pipeline:
       - ./tests/drone/test-javascript.sh
     when:
       matrix:
-        TEST_SUITE: phpunit
+        TEST_SUITE: php_unit_tests
 
 services:
   mariadb:
