@@ -66,19 +66,20 @@ pipeline:
       local: false
       event: [push]
 
-  coverage:
+  php_unit_tests:
     image: owncloudci/php:${PHP_VERSION}
     pull: true
     group: test
     environment:
       - PHP_VERSION=${PHP_VERSION}
       - DB_TYPE=${DB_TYPE}
+      - ENABLE_COVERAGE=${ENABLE_COVERAGE}
     commands:
-      - ./tests/drone/test-coverage.sh
+      - ./tests/drone/test-php-unit-tests.sh
     when:
       event: [push, pull_request]
       matrix:
-        TEST_SUITE: coverage
+        TEST_SUITE: php_unit_tests
 
   codecov:
     image: plugins/codecov:1
@@ -90,7 +91,8 @@ pipeline:
     when:
       event: [push, pull_request]
       matrix:
-        TEST_SUITE: coverage
+        TEST_SUITE: php_unit_tests
+        ENABLE_COVERAGE: true
 
   javascript:
     image: owncloudci/php:${PHP_VERSION}
@@ -101,32 +103,6 @@ pipeline:
     when:
       matrix:
         TEST_SUITE: phpunit
-
-  phpunit:
-    image: owncloudci/php:${PHP_VERSION}
-    pull: true
-    group: test
-    environment:
-      - PHP_VERSION=${PHP_VERSION}
-      - DB_TYPE=${DB_TYPE}
-    commands:
-      - ./tests/drone/test-phpunit.sh
-    when:
-      matrix:
-        TEST_SUITE: phpunit
-
-  files_external:
-    image: owncloudci/php:${PHP_VERSION}
-    pull: true
-    group: test
-    environment:
-      - PHP_VERSION=${PHP_VERSION}
-      - DB_TYPE=${DB_TYPE}
-    commands:
-      - ./tests/drone/test-files-external.sh
-    when:
-      matrix:
-        TEST_SUITE: files_external
 
 services:
   mariadb:
@@ -202,24 +178,24 @@ matrix:
     #  TEST_SUITE: phpunit
     - PHP_VERSION: 5.6
       DB_TYPE: postgres
-      TEST_SUITE: phpunit
+      TEST_SUITE: php-unit-tests
     - PHP_VERSION: 5.6
       DB_TYPE: oracle
-      TEST_SUITE: phpunit
+      TEST_SUITE: php-unit-tests
 
     # PHP 7.0
     - PHP_VERSION: 7.0
       DB_TYPE: sqlite
-      TEST_SUITE: phpunit
+      TEST_SUITE: php-unit-tests
     #- PHP_VERSION: 7.0
     #  DB_TYPE: mariadb
     #  TEST_SUITE: phpunit
     - PHP_VERSION: 7.0
       DB_TYPE: mysql
-      TEST_SUITE: phpunit
+      TEST_SUITE: php-unit-tests
     - PHP_VERSION: 7.0
       DB_TYPE: mysqlmb4
-      TEST_SUITE: phpunit
+      TEST_SUITE: php-unit-tests
     #- PHP_VERSION: 7.0
     #  DB_TYPE: postgres
     #  TEST_SUITE: phpunit
@@ -244,7 +220,7 @@ matrix:
     # PHP 7.2
     - PHP_VERSION: 7.2
       DB_TYPE: sqlite
-      TEST_SUITE: phpunit
+      TEST_SUITE: php-unit-tests
     #- PHP_VERSION: 7.2
     #  DB_TYPE: mariadb
     #  TEST_SUITE: phpunit
@@ -266,13 +242,16 @@ matrix:
     # Code Coverage Computation
     - PHP_VERSION: 7.1
       DB_TYPE: sqlite
-      TEST_SUITE: coverage
+      TEST_SUITE: php-unit-tests
+      ENABLE_COVERAGE: true
 
     - PHP_VERSION: 7.1
       DB_TYPE: mariadb
-      TEST_SUITE: coverage
+      TEST_SUITE: php-unit-tests
+      ENABLE_COVERAGE: true
 
     - PHP_VERSION: 7.1
       DB_TYPE: sqlite
-      TEST_SUITE: coverage
+      TEST_SUITE: php-unit-tests
       FILES_EXTERNAL_TYPE: webdav
+      ENABLE_COVERAGE: true
