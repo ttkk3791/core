@@ -66,7 +66,7 @@ pipeline:
       local: false
       event: [push]
 
-  php_unit_tests:
+  php-unit-tests:
     image: owncloudci/php:${PHP_VERSION}
     pull: true
     group: test
@@ -79,7 +79,7 @@ pipeline:
     when:
       event: [push, pull_request]
       matrix:
-        TEST_SUITE: php_unit_tests
+        TEST_SUITE: php-unit-tests
 
   codecov:
     image: plugins/codecov:1
@@ -91,7 +91,7 @@ pipeline:
     when:
       event: [push, pull_request]
       matrix:
-        TEST_SUITE: php_unit_tests
+        TEST_SUITE: php-unit-tests
         ENABLE_COVERAGE: true
 
   javascript:
@@ -102,7 +102,7 @@ pipeline:
       - ./tests/drone/test-javascript.sh
     when:
       matrix:
-        TEST_SUITE: php_unit_tests
+        TEST_SUITE: php-unit-tests
 
 services:
   mariadb:
