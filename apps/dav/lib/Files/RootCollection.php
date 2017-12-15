@@ -21,10 +21,11 @@
  */
 namespace OCA\DAV\Files;
 
+use OCA\DAV\Connector\Sabre\Directory;
 use Sabre\DAV\INode;
+use Sabre\DAV\SimpleCollection;
 use Sabre\DAVACL\AbstractPrincipalCollection;
 use Sabre\HTTP\URLUtil;
-use Sabre\DAV\SimpleCollection;
 
 class RootCollection extends AbstractPrincipalCollection {
 
@@ -47,7 +48,13 @@ class RootCollection extends AbstractPrincipalCollection {
 			// in the future this could be considered to be used for accessing shared files
 			return new SimpleCollection($name);
 		}
-		return new FilesHome($principalInfo);
+		$view = \OC\Files\Filesystem::getView();
+		$home = new FilesHome($principalInfo);
+		$rootInfo = $view->getFileInfo('');
+		$rootNode = new Directory($view, $rootInfo, $home);
+		$home->init($rootNode, $view, \OC::$server->getMountManager());
+
+		return $home;
 	}
 
 	function getName() {

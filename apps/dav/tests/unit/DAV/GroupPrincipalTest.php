@@ -25,7 +25,7 @@ namespace OCA\DAV\Tests\unit\DAV;
 use OCA\DAV\DAV\GroupPrincipalBackend;
 use OCP\IGroupManager;
 use PHPUnit_Framework_MockObject_MockObject;
-use \Sabre\DAV\PropPatch;
+use Sabre\DAV\PropPatch;
 
 class GroupPrincipalTest extends \Test\TestCase {
 
@@ -122,7 +122,7 @@ class GroupPrincipalTest extends \Test\TestCase {
 			->will($this->returnValue(null));
 
 		$response = $this->connector->getPrincipalByPath('principals/groups/foo');
-		$this->assertSame(null, $response);
+		$this->assertNull($response);
 	}
 
 	public function testGetGroupMemberSet() {

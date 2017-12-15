@@ -31,6 +31,7 @@ use OCA\DAV\Connector\Sabre\File;
 use OCA\DAV\Connector\Sabre\FilesPlugin;
 use OCA\DAV\Connector\Sabre\Node;
 use OCA\DAV\Meta\MetaFile;
+use OCP\Files\FileInfo;
 use OCP\Files\StorageNotAvailableException;
 use OCP\IConfig;
 use OCP\IRequest;
@@ -41,7 +42,6 @@ use Sabre\DAV\Tree;
 use Sabre\HTTP\RequestInterface;
 use Sabre\HTTP\ResponseInterface;
 use Test\TestCase;
-use OCP\Files\FileInfo;
 
 /**
  * Copyright (c) 2015 Vincent Petry <pvince81@owncloud.com>
@@ -204,7 +204,7 @@ class FilesPluginTest extends TestCase {
 		$this->assertEquals('"abc"', $propFind->get(self::GETETAG_PROPERTYNAME));
 		$this->assertEquals('00000123instanceid', $propFind->get(self::FILEID_PROPERTYNAME));
 		$this->assertEquals('123', $propFind->get(self::INTERNAL_FILEID_PROPERTYNAME));
-		$this->assertEquals(null, $propFind->get(self::SIZE_PROPERTYNAME));
+		$this->assertNull($propFind->get(self::SIZE_PROPERTYNAME));
 		$this->assertEquals('DWCKMSR', $propFind->get(self::PERMISSIONS_PROPERTYNAME));
 		$this->assertEquals('http://example.com/', $propFind->get(self::DOWNLOADURL_PROPERTYNAME));
 		$this->assertEquals('foo', $propFind->get(self::OWNER_ID_PROPERTYNAME));
@@ -234,7 +234,7 @@ class FilesPluginTest extends TestCase {
 			$node
 		);
 
-		$this->assertEquals(null, $propFind->get(self::DOWNLOADURL_PROPERTYNAME));
+		$this->assertFalse($propFind->get(self::DOWNLOADURL_PROPERTYNAME));
 	}
 
 	public function testGetPublicPermissions() {
@@ -297,7 +297,7 @@ class FilesPluginTest extends TestCase {
 		$this->assertEquals('00000123instanceid', $propFind->get(self::FILEID_PROPERTYNAME));
 		$this->assertEquals(1025, $propFind->get(self::SIZE_PROPERTYNAME));
 		$this->assertEquals('DWCKMSR', $propFind->get(self::PERMISSIONS_PROPERTYNAME));
-		$this->assertEquals(null, $propFind->get(self::DOWNLOADURL_PROPERTYNAME));
+		$this->assertNull($propFind->get(self::DOWNLOADURL_PROPERTYNAME));
 		$this->assertEquals('my_fingerprint', $propFind->get(self::DATA_FINGERPRINT_PROPERTYNAME));
 		$this->assertEquals([self::DOWNLOADURL_PROPERTYNAME], $propFind->get404Properties());
 	}

@@ -32,25 +32,25 @@ namespace OCA\DAV\Connector\Sabre;
 
 use OC\Files\FileInfo;
 use OC\Files\Filesystem;
+use OC\Files\Mount\MoveableMount;
+use OCA\DAV\Connector\Sabre\Exception\FileLocked;
 use OCA\DAV\Connector\Sabre\Exception\Forbidden;
 use OCA\DAV\Connector\Sabre\Exception\InvalidPath;
-use OCA\DAV\Connector\Sabre\Exception\FileLocked;
+use OCA\DAV\Upload\FutureFile;
 use OCP\Files\ForbiddenException;
 use OCP\Files\InvalidPathException;
 use OCP\Files\StorageNotAvailableException;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
+use Sabre\DAV\Exception\BadRequest;
+use Sabre\DAV\Exception\Forbidden as SabreForbidden;
 use Sabre\DAV\Exception\Locked as SabreLocked;
 use Sabre\DAV\Exception\NotFound as SabreNotFound;
 use Sabre\DAV\Exception\ServiceUnavailable as SabreServiceUnavailable;
-use Sabre\DAV\Exception\Forbidden as SabreForbidden;
 use Sabre\DAV\ICollection;
+use Sabre\DAV\IFile;
 use Sabre\DAV\IMoveTarget;
 use Sabre\DAV\INode;
-use Sabre\DAV\Exception\BadRequest;
-use OC\Files\Mount\MoveableMount;
-use Sabre\DAV\IFile;
-use OCA\DAV\Upload\FutureFile;
 use Sabre\DAV\IQuota;
 use Sabre\HTTP\URLUtil;
 
@@ -83,7 +83,7 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 	 * @param ObjectTree|null $tree
 	 * @param \OCP\Share\IManager $shareManager
 	 */
-	public function __construct($view, $info, $tree = null, $shareManager = null) {
+	public function __construct($view, $info, ObjectTree $tree = null, $shareManager = null) {
 		parent::__construct($view, $info, $shareManager);
 		$this->tree = $tree;
 	}

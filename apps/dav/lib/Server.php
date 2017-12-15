@@ -26,6 +26,7 @@
  */
 namespace OCA\DAV;
 
+use OCA\DAV\AppInfo\PluginManager;
 use OCA\DAV\CalDAV\Schedule\IMipPlugin;
 use OCA\DAV\CardDAV\ImageExportPlugin;
 use OCA\DAV\Connector\Sabre\Auth;
@@ -38,22 +39,21 @@ use OCA\DAV\Connector\Sabre\DummyGetResponsePlugin;
 use OCA\DAV\Connector\Sabre\FakeLockerPlugin;
 use OCA\DAV\Connector\Sabre\FilesPlugin;
 use OCA\DAV\Connector\Sabre\FilesReportPlugin;
-use OCA\DAV\Connector\Sabre\SharesPlugin;
-use OCA\DAV\DAV\PublicAuth;
+use OCA\DAV\Connector\Sabre\MaintenancePlugin;
 use OCA\DAV\Connector\Sabre\QuotaPlugin;
-use OCA\DAV\Files\BrowserErrorPagePlugin;
+use OCA\DAV\Connector\Sabre\SharesPlugin;
+use OCA\DAV\Connector\Sabre\TagsPlugin;
+use OCA\DAV\Connector\Sabre\ValidateRequestPlugin;
 use OCA\DAV\DAV\FileCustomPropertiesBackend;
 use OCA\DAV\DAV\MiscCustomPropertiesBackend;
+use OCA\DAV\DAV\PublicAuth;
+use OCA\DAV\Files\BrowserErrorPagePlugin;
 use OCA\DAV\SystemTag\SystemTagPlugin;
 use OCA\DAV\Upload\ChunkingPlugin;
 use OCP\IRequest;
 use OCP\SabrePluginEvent;
 use Sabre\CardDAV\VCFExportPlugin;
 use Sabre\DAV\Auth\Plugin;
-use OCA\DAV\Connector\Sabre\TagsPlugin;
-use OCA\DAV\AppInfo\PluginManager;
-use OCA\DAV\Connector\Sabre\MaintenancePlugin;
-use OCA\DAV\Connector\Sabre\ValidateRequestPlugin;
 
 class Server {
 
@@ -71,7 +71,8 @@ class Server {
 		$dispatcher = \OC::$server->getEventDispatcher();
 
 		$root = new RootCollection();
-		$this->server = new \OCA\DAV\Connector\Sabre\Server($root);
+		$tree = new \OCA\DAV\Tree($root);
+		$this->server = new \OCA\DAV\Connector\Sabre\Server($tree);
 
 		// Backends
 		$authBackend = new Auth(
@@ -112,13 +113,19 @@ class Server {
 		$this->server->addPlugin(new \OCA\DAV\Connector\Sabre\LockPlugin());
 		$this->server->addPlugin(new \Sabre\DAV\Sync\Plugin());
 
-		// acl
-		$acl = new DavAclPlugin();
-		$acl->principalCollectionSet = [
-			'principals/users', 'principals/groups'
-		];
-		$acl->defaultUsernamePath = 'principals/users';
-		$this->server->addPlugin($acl);
+		// ACL plugin not used in files subtree, also it causes issues
+		// with performance and locking issues because it will query
+		// every parent node which might trigger an implicit rescan in the
+		// case of external storages with update detection
+		if (strpos($this->server->getRequestUri(), 'files/') !== 0) {
+			// acl
+			$acl = new DavAclPlugin();
+			$acl->principalCollectionSet = [
+				'principals/users', 'principals/groups'
+			];
+			$acl->defaultUsernamePath = 'principals/users';
+			$this->server->addPlugin($acl);
+		}
 
 		// calendar plugins
 		$this->server->addPlugin(new \OCA\DAV\CalDAV\Plugin());

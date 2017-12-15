@@ -196,6 +196,21 @@ else
 	fi
 fi
 
+#skip tests tagged with the current oC version
+#one, two or three parts of the version can be used
+#e.g.
+#@skipOnOcV10.0.4
+#@skipOnOcV10.0
+#@skipOnOcV10
+
+remote_occ $ADMIN_PASSWORD $OCC_URL "config:system:get version"
+OWNCLOUD_VERSION=`echo $REMOTE_OCC_STDOUT | cut -d"." -f1-3`
+BEHAT_TAGS='~@skipOnOcV'$OWNCLOUD_VERSION'&&'$BEHAT_TAGS
+OWNCLOUD_VERSION=`echo $OWNCLOUD_VERSION | cut -d"." -f1-2`
+BEHAT_TAGS='~@skipOnOcV'$OWNCLOUD_VERSION'&&'$BEHAT_TAGS
+OWNCLOUD_VERSION=`echo $OWNCLOUD_VERSION | cut -d"." -f1`
+BEHAT_TAGS='~@skipOnOcV'$OWNCLOUD_VERSION'&&'$BEHAT_TAGS
+
 REMOTE_FED_BASE_URL=$REMOTE_FED_SRV_HOST_NAME
 
 if [ ! -z "$REMOTE_FED_SRV_HOST_PORT" ] && [ "$REMOTE_FED_SRV_HOST_PORT" != "80" ]
@@ -240,7 +255,7 @@ if [ "$BROWSER" == "firefox" ]
 then
 	#set screen resolution so that hopefully dragable elements will be visible
 	#FF gives problems if the destination element is not visible
-	EXTRA_CAPABILITIES='"browserVersion":"'$BROWSER_VERSION'","screenResolution":"1920x1080",'
+	EXTRA_CAPABILITIES='"screenResolution":"1920x1080",'
 	
 	#FF 47 needs a specific selenium version
 	if verlte "$BROWSER_VERSION" "47.0"
@@ -255,15 +270,21 @@ then
 	EXTRA_CAPABILITIES='"iedriverVersion": "3.4.0","requiresWindowFocus":true,"screenResolution":"1920x1080",'
 fi
 
-EXTRA_CAPABILITIES=$EXTRA_CAPABILITIES'"maxDuration":"3600"'
+EXTRA_CAPABILITIES=$EXTRA_CAPABILITIES'"browserVersion":"'$BROWSER_VERSION'","maxDuration":"3600"'
 
 #Set up personalized skeleton
 remote_occ $ADMIN_PASSWORD $OCC_URL "--no-warnings config:system:get skeletondirectory"
 
 PREVIOUS_SKELETON_DIR=$REMOTE_OCC_STDOUT
+
+#$SRC_SKELETON_DIR is the path to the skeleton folder on the machine where the tests are executed
+#it is used for file comparisons in various tests
+export SRC_SKELETON_DIR=$(pwd)/tests/ui/skeleton
+#$SKELETON_DIR is the path to the skeleton folder on the machine where oC runs (system under test)
+#it is used to give users a defined set of files and folders for the tests
 if [ -z "$SKELETON_DIR" ]
 then
-	export SKELETON_DIR=$(pwd)/tests/ui/skeleton
+	export SKELETON_DIR="$SRC_SKELETON_DIR"
 fi
 
 remote_occ $ADMIN_PASSWORD $OCC_URL "config:system:set skeletondirectory --value=$SKELETON_DIR"
@@ -291,6 +312,11 @@ export IPV4_URL
 export IPV6_URL
 export REMOTE_FED_BASE_URL
 export FILES_FOR_UPLOAD="$(pwd)/tests/ui/filesForUpload/"
+
+if [ ! -w $FILES_FOR_UPLOAD ]
+then
+	echo "WARNING: cannot write to upload folder '$FILES_FOR_UPLOAD', some upload tests might fail"
+fi
 
 lib/composer/bin/behat -c $BEHAT_YML $BEHAT_SUITE_OPTION $BEHAT_TAG_OPTION $BEHAT_TAGS $BEHAT_FEATURE -v  2>&1 | tee -a $TEST_LOG_FILE
 

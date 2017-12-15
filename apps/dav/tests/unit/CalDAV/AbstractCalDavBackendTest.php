@@ -24,8 +24,6 @@ namespace OCA\DAV\Tests\unit\CalDAV;
 
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\DAV\Connector\Sabre\Principal;
-use OCP\IL10N;
-use OCP\IConfig;
 use OCP\Security\ISecureRandom;
 use Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet;
 use Test\TestCase;
@@ -99,7 +97,7 @@ abstract class AbstractCalDavBackendTest extends TestCase {
 			'{http://apple.com/ns/ical/}calendar-color' => '#1C4587FF'
 		]);
 		$calendars = $this->backend->getCalendarsForUser(self::UNIT_TEST_USER);
-		$this->assertEquals(1, count($calendars));
+		$this->assertCount(1, $calendars);
 		$this->assertEquals(self::UNIT_TEST_USER, $calendars[0]['principaluri']);
 		/** @var SupportedCalendarComponentSet $components */
 		$components = $calendars[0]['{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'];

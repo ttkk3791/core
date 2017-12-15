@@ -23,14 +23,14 @@ namespace OCA\DAV\DAV;
 
 use OCP\IDBConnection;
 use OCP\IUser;
+use Sabre\Dav\Exception\Forbidden;
+use Sabre\DAV\Exception\NotFound;
+use Sabre\DAV\Exception\ServiceUnavailable;
 use Sabre\DAV\INode;
 use Sabre\DAV\PropertyStorage\Backend\BackendInterface;
 use Sabre\DAV\PropFind;
 use Sabre\DAV\PropPatch;
 use Sabre\DAV\Tree;
-use Sabre\Dav\Exception\Forbidden;
-use Sabre\DAV\Exception\NotFound;
-use Sabre\DAV\Exception\ServiceUnavailable;
 
 abstract class AbstractCustomPropertiesBackend implements BackendInterface {
 
@@ -246,7 +246,7 @@ abstract class AbstractCustomPropertiesBackend implements BackendInterface {
 			// we catch the exception to prevent breaking the whole list with a 404
 			// (soft fail)
 			\OC::$server->getLogger()->warning(
-				'Could not get node for path: "{path}" : {$message}',
+				'Could not get node for path: "{path}" : {message}',
 				[
 					'app' => 'dav',
 					'path' => $path,
