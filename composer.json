@@ -35,7 +35,7 @@
         "php": ">=5.4.1",
         "doctrine/dbal": "^2.5",
         "phpseclib/phpseclib": "^2.0",
-        "rackspace/php-opencloud": "v1.9.2",
+        "rackspace/php-opencloud": "v1.16.0",
         "jeremeamia/superclosure": "2.1.0",
         "bantu/ini-get-wrapper": "v1.0.1",
         "punic/punic": "^1.6",
