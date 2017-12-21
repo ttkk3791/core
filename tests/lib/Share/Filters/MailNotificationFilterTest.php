@@ -2,7 +2,6 @@
 
 namespace Test\Share;
 
-use Faker\Factory;
 use OC\Share\Filters\MailNotificationFilter;
 use Test\TestCase;
 
@@ -22,7 +21,6 @@ class MailNotificationFilterTest extends TestCase {
 	}
 
 	public function mailNotificationData() {
-
 		return [
 			[
 				[
