@@ -12,17 +12,22 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - Link to trusted domains docs in error message - [#29730](https://github.com/owncloud/core/issues/29730)
 - Add indices on share table - [#29883](https://github.com/owncloud/core/issues/29883) [#29592](https://github.com/owncloud/core/issues/29592)
 - Add dispatcher event for "unshare from self" action - [#29851](https://github.com/owncloud/core/issues/29851)
+- Works now with PHP 7.2 - [#29878](https://github.com/owncloud/core/issues/29878)
+- Added public hooks for file operations using Symfony Event Dispatcher - [#29939](https://github.com/owncloud/core/issues/29939)
 
 ### Changed
 - Switch Webdav URL in field in navigation panel to the new endpoint - [#29766](https://github.com/owncloud/core/issues/29766)
 - Require a minimum of 1 character for the application password name - [#29831](https://github.com/owncloud/core/issues/29831)
 - Only allow a single active theme app with no magic fallbacks to inactive app themes  - [#29854](https://github.com/owncloud/core/issues/29854)
+- Config report now hides email address from email config - [#29949](https://github.com/owncloud/core/issues/29949)
 
 ### Removed
 - Removed old Dropbox storage backend, people should use the [files_external_dropbox app](https://github.com/owncloud/files_external_dropbox/) instead - [#29135](https://github.com/owncloud/core/issues/29135)
 - Revoke tasks.crt - [#29882](https://github.com/owncloud/core/issues/29882)
 
 ### Fixed
+- Now using upsert instead of insertIfNotExists for file cache updates, fixes concurrency issues - [#29934](https://github.com/owncloud/core/issues/29934)
+- Only set CORS headers on Webdav endpoint when Origin header is specified - [#29874](https://github.com/owncloud/core/issues/29874)
 - Ignore broken/dead symlinks on filescan - [#28959](https://github.com/owncloud/core/issues/28959)
 - Improve performance by caching non-existing accounts - [#29866](https://github.com/owncloud/core/issues/29866)
 - Fix template location order by searching the enabled theme app first - [#29867](https://github.com/owncloud/core/issues/29867)
