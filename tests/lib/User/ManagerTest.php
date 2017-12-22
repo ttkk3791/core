@@ -19,6 +19,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
 use OCP\ILogger;
 use OCP\IUser;
+use Punic\Data;
 use Test\TestCase;
 
 /**
@@ -97,10 +98,14 @@ class ManagerTest extends TestCase {
 				}
 			}));
 
-		$this->manager->registerBackend($backend);
-
 		$account = $this->createMock(Account::class);
-		$this->accountMapper->expects($this->once())->method('getByUid')->with('foo')->willReturn($account);
+
+		$this->syncService->expects($this->once())
+			->method('createOrSyncAccount')
+			->with('foo', $backend)
+			->willReturn($account);
+
+		$this->manager->registerBackend($backend);
 
 		$user = $this->manager->checkPassword('foo', 'bar');
 		$this->assertInstanceOf(\OC\User\User::class, $user);
