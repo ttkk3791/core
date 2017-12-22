@@ -579,9 +579,11 @@ class Session implements IUserSession, Emitter {
 			if ($apacheBackend instanceof UserInterface) {
 				$backend = $apacheBackend;
 			} else {
+				\OC::$server->getLogger()->error("Apache backend failed to provide a valid backend for the user");
 				return false;
 			}
 		} else {
+			\OC::$server->getLogger()->debug("No valid user detected from apache user backend");
 			return false;
 		}
 
