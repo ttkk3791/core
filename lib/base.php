@@ -662,7 +662,6 @@ class OC {
 			OC_User::setIncognitoMode(true);
 		}
 
-		self::registerSyncServiceHooks();
 		self::registerCacheHooks();
 		self::registerFilesystemHooks();
 		if ($systemConfig->getValue('enable_previews', true)) {
@@ -725,23 +724,6 @@ class OC {
 			exit();
 		}
 		\OC::$server->getEventLogger()->end('boot');
-	}
-
-	/**
-	 * Register hooks to sync account after login
-	 */
-	public static function registerSyncServiceHooks() {
-		if (\OC::$server->getSystemConfig()->getValue('installed', false) && !self::checkUpgrade(false)) {
-			$userSession = self::$server->getUserSession();
-			$userSession->listen('\OC\User', 'postLogin', function (\OCP\IUser $user) {
-				/** @var \OC\User\SyncService $syncService */
-				$syncService = self::$server->query('SyncService');
-				$account = self::$server->getAccountMapper()->getByUid($user->getUID());
-				$userBackend = $account->getBackendInstance();// Get the backend for a user
-				$syncService->syncAccount($account, $userBackend, $user->getUID());
-				self::$server->getAccountMapper()->update($account);
-			});
-		}
 	}
 
 	/**
