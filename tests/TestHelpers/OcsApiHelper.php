@@ -45,6 +45,8 @@ class OcsApiHelper {
 	public static function sendRequest(
 		$baseUrl, $user, $password, $method, $path, $body = [], $apiVersion = 2
 	) {
+		$urlSpecialChar = [['&','#', '?'],['%26','%23', '%3F']];
+		$path = str_replace($urlSpecialChar[0], $urlSpecialChar[1], $path);
 		$fullUrl = $baseUrl . "/ocs/v{$apiVersion}.php" . $path;
 		$client = new Client();
 		$options = [];
